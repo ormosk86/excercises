@@ -42,27 +42,36 @@ public class DueDateHandler {
         this.turnAroundHours = turnAroundHours;
     }
 
-    public void countEndDate(int startMonth, int startDay, int startYear, int daysToAdd) {
-        int numberOfDaysTemp= daysPerMonth.get(startMonth);
-        // for finding leap year
-        if(startMonth==2 && (startYear%4==0 && startYear%100!=0 && startYear%400!=0)) {
-            numberOfDaysTemp= daysPerMonth.get(startMonth)+1;
+    public String countEndDate(int startMonth, int startDay, int startYear, int daysToAdd) {
+        int numberOfDaysTemp = daysPerMonth.get(startMonth);
+
+        // For finding leap year.
+        if (startMonth == 2 && startYear % 4 == 0 && startYear % 100 != 0 && startYear % 400 != 0) {
+            numberOfDaysTemp = daysPerMonth.get(startMonth) + 1;
         }
-        if(startDay+daysToAdd>numberOfDaysTemp) {
-            if(startMonth<=11) {
-                countEndDate(startMonth+1,startDay,startYear,daysToAdd-numberOfDaysTemp);
+
+        // Calculate the updated day.
+        int updatedDay = startDay + daysToAdd;
+
+        // If the updated day is greater than the number of days in the start month,
+        // carry over the extra days to the next month.
+        while (updatedDay > numberOfDaysTemp) {
+            updatedDay -= numberOfDaysTemp;
+            startMonth++;
+
+            // If the start month is greater than 12, carry over the extra months to the next year.
+            if (startMonth > 12) {
+                startMonth = 1;
+                startYear++;
             }
-            else {
-                countEndDate(1,startDay,startYear+1,daysToAdd-numberOfDaysTemp);
-            }
         }
-        else {
-            System.out.println ("Date of task completion: "+startMonth+"/"+(startDay+daysToAdd)+"/"+startYear);
-        }
+
+        // Print the updated date.
+        return (startMonth + "/" + updatedDay + "/" + startYear);
     }
 
-    // Zeller’s congruence is an algorithm devised by Christian Zeller to calculate the day of the week for any Julian or Gregorian calendar date.
-    public int Zellercongruence(int day, int month, int year)
+    // Implementation fo the Zeller’s congruence is an algorithm to calculate the day of the week for any Gregorian calendar date.
+    public int findSubmitDayOfWeek(int day, int month, int year)
     {
         if (month == 1)
         {
@@ -79,11 +88,11 @@ public class DueDateHandler {
         int k = year % 100;
         int j = year / 100;
         int h = q + 13*(m + 1) / 5 + k + k / 4 + j / 4 + 5 * j;
-        h = h % 7;
+        int dayOfTheWeek = h % 7;
         //System.out.println("Zellers result is: "+h );
-        return h;
+        return dayOfTheWeek;
     }
-    public void calculateDueDate(){
+    public String calculateDueDate(){
         int extraDays = 0;
         int extraHours = 0;
 
@@ -91,18 +100,16 @@ public class DueDateHandler {
             extraDays ++;
             extraDays += (turnAroundHours-(dayEndHour-submitHour))/8;
             extraHours = (turnAroundHours-(dayEndHour-submitHour))%8;
-           }
+        }
         else {
             extraHours = turnAroundHours;
         }
 
-        int dayOfWeek = Zellercongruence(submitDay,submitMonth, submitYear);
-        System.out.println("Extradays to add: " + extraDays);
+        int dayOfWeek = findSubmitDayOfWeek(submitDay,submitMonth, submitYear);
+        //System.out.println("Extradays to add: " + extraDays);
         int daysToAdd = countExtraWeekDays(extraDays, dayOfWeek, extraHours);
 
-        countEndDate(submitMonth, submitDay, submitYear, daysToAdd);
-        System.out.println("Extrahours: " +extraHours);
-        System.out.println("Hour when finished: " + (dayStartHour + extraHours));
+        return ("Date: "+ countEndDate(submitMonth, submitDay, submitYear, daysToAdd) +" Hour: " + (dayStartHour + extraHours));
     }
 
     public List<String> generateWeekdays(int startIndex, int n) {
@@ -137,6 +144,4 @@ public class DueDateHandler {
         }
         return extraWeekDays;
     }
-
-
 }
