@@ -2,13 +2,11 @@ package org.emarsys;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
 import java.util.*;
 
 public class DueDateHandler {
 
     private static final Logger logger = LogManager.getLogger();
-
     static final int DAY_START_HOUR = 9;
     static final int DAY_END_HOUR = 17;
     private static final Map<Integer, Integer> DAYS_PER_MONTH;
@@ -28,7 +26,6 @@ public class DueDateHandler {
         DAYS_PER_MONTH.put(11, 30);
         DAYS_PER_MONTH.put(12, 31);
     }
-
     int submitYear;
     int submitMonth;
     int submitDay;
@@ -45,19 +42,19 @@ public class DueDateHandler {
         if (submitMonth < 13 && submitMonth > 0) {
             this.submitMonth = submitMonth;
         } else {
-            throw new IllegalArgumentException("SubmitMonth parameter must be from 1-12");
+            throw new IllegalArgumentException("SubmitMonth parameter must be from 1-12!");
         }
 
         if (submitDay > 1 && submitDay < 32) {
             this.submitDay = submitDay;
         } else {
-            throw new IllegalArgumentException("SubmitDay parameter must be from 1-31");
+            throw new IllegalArgumentException("SubmitDay parameter must be from 1-31!");
         }
 
         if (submitHour < DAY_END_HOUR && submitHour > DAY_START_HOUR) {
             this.submitHour = submitHour;
         } else {
-            throw new IllegalArgumentException("SubmitHour parameter must be from 9-17");
+            throw new IllegalArgumentException("SubmitHour parameter must be from 9-17!");
         }
 
         if (turnAroundHours > 0) {
@@ -65,6 +62,26 @@ public class DueDateHandler {
         } else {
             throw new IllegalArgumentException("TurnAroundHours parameter must not be less than 1!");
         }
+    }
+
+    public String calculateDueDate() {
+        int extraDays = 0;
+        int extraHours;
+
+        if (turnAroundHours > DAY_END_HOUR - submitHour) {
+            extraDays++;
+            extraDays += (turnAroundHours - (DAY_END_HOUR - submitHour)) / 8;
+            extraHours = (turnAroundHours - (DAY_END_HOUR - submitHour)) % 8;
+        } else {
+            return ("Task completion DATE: " + submitMonth + "/" + submitDay + "/" + submitYear)
+                    + " HOUR: " + (submitHour + turnAroundHours);
+        }
+
+        int dayOfWeek = findSubmitDayOfWeek(submitDay, submitMonth, submitYear);
+        int daysToAdd = countExtraWeekDays(extraDays, dayOfWeek);
+
+        return ("Task completion DATE: " + countEndDate(submitMonth, submitDay, submitYear, daysToAdd)
+                + " HOUR: " + (DAY_START_HOUR + extraHours));
     }
 
     private String countEndDate(int startMonth, int startDay, int startYear, int daysToAdd) {
@@ -93,7 +110,8 @@ public class DueDateHandler {
         return (startMonth + "/" + updatedDay + "/" + startYear);
     }
 
-    // Implementation of the Zeller's congruence algorithm to calculate the day of the week for any Gregorian calendar date.
+    // Implementation of the Zeller's congruence algorithm,
+    // to calculate the day of the week for any Gregorian calendar date.
     private int findSubmitDayOfWeek(int day, int month, int year) {
         if (month == 1) {
             month = 13;
@@ -112,46 +130,12 @@ public class DueDateHandler {
         return h % 7;
     }
 
-    public String calculateDueDate() {
-        int extraDays = 0;
-        int extraHours;
-
-        if (turnAroundHours > DAY_END_HOUR - submitHour) {
-            extraDays++;
-            extraDays += (turnAroundHours - (DAY_END_HOUR - submitHour)) / 8;
-            extraHours = (turnAroundHours - (DAY_END_HOUR - submitHour)) % 8;
-        } else {
-            return ("Task completion DATE: " + submitMonth + "/" + submitDay + "/" + submitYear)
-                    + " HOUR: " + (submitHour + turnAroundHours);
-        }
-
-        int dayOfWeek = findSubmitDayOfWeek(submitDay, submitMonth, submitYear);
-        int daysToAdd = countExtraWeekDays(extraDays, dayOfWeek);
-
-        return ("Task completion DATE: " + countEndDate(submitMonth, submitDay, submitYear, daysToAdd)
-                + " HOUR: " + (DAY_START_HOUR + extraHours));
-    }
-
-    private List<String> generateWeekdaysList(int startIndex, int n) {
-        List<String> weekdays = Arrays.asList("Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday");
-
-        List<String> generatedWeekdays = new ArrayList<>();
-
-        for (int i = 0; i < n; i++) {
-            int j = 0;
-            while (j < weekdays.size()) {
-                generatedWeekdays.add(weekdays.get((startIndex + j) % weekdays.size()));
-                j++;
-            }
-        }
-        return generatedWeekdays;
-    }
-
     private int countExtraWeekDays(int extraWorkingDays, int startDay) {
         int countWeekDays = 0;
         int extraWeekDays = 0;
         List<String> generatedWeekdays = generateWeekdaysList(startDay, extraWorkingDays / 7 + 2);
 
+        //Iterating the weekdays list and counts them until all the extra days occurs on working day.
         for (int i = 1; i < generatedWeekdays.size() - 1; i++) {
             String actualDay = generatedWeekdays.get(i);
             if (countWeekDays == extraWorkingDays) {
@@ -162,8 +146,23 @@ public class DueDateHandler {
             }
             extraWeekDays = i;
         }
-        logger.info(extraWorkingDays +" plus workingdays occurs in the upcoming " + extraWeekDays + " calendar days");
+        logger.info(extraWorkingDays +" plus working days occurs in the upcoming " + extraWeekDays + " calendar days");
 
         return extraWeekDays;
+    }
+
+    private List<String> generateWeekdaysList(int startIndex, int n) {
+        List<String> weekdays = Arrays.asList("Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday");
+        List<String> generatedWeekdays = new ArrayList<>();
+
+        //Generating a recurring weekdays list starting with the submit day long enough for the whole turnaround time even with weekends.
+        for (int i = 0; i < n; i++) {
+            int j = 0;
+            while (j < weekdays.size()) {
+                generatedWeekdays.add(weekdays.get((startIndex + j) % weekdays.size()));
+                j++;
+            }
+        }
+        return generatedWeekdays;
     }
 }
