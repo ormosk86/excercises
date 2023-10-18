@@ -1,12 +1,7 @@
 package org.emarsys;
-// Java Program to Generate Desired Calendar
-// Without calendar.get() function or
-// Inputting the Year and the Month
 
-// Importing required classes
 import java.util.*;
 
-// Main class
 public class DueDateHandler {
 
     int submitYear;
@@ -35,14 +30,28 @@ public class DueDateHandler {
     }
 
     public DueDateHandler(int submitYear, int submitMonth, int submitDay, int submitHour, int turnAroundHours) {
-        this.submitYear = submitYear;
-        this.submitMonth = submitMonth;
-        this.submitDay = submitDay;
-        this.submitHour = submitHour;
-        this.turnAroundHours = turnAroundHours;
+        if (submitYear>0) {
+            this.submitYear = submitYear;
+        } else {throw new IllegalArgumentException("SubmitYear parameter must not be less than 1!");}
+
+        if (submitMonth < 13 && submitMonth > 0) {
+            this.submitMonth = submitMonth;
+        } else {throw new IllegalArgumentException("SubmitMonth parameter must be from 1-12");}
+
+        if (submitDay>1 && submitDay<32) {
+            this.submitDay = submitDay;
+        } else {throw new IllegalArgumentException("SubmitDay parameter must be from 1-31");}
+
+        if (submitHour<dayEndHour && submitHour>dayStartHour) {
+            this.submitHour = submitHour;
+        } else {throw new IllegalArgumentException("SubmitHour parameter must be from 9-17");}
+
+        if (turnAroundHours>0) {
+            this.turnAroundHours = turnAroundHours;
+        } else {throw new IllegalArgumentException("TurnAroundHours parameter must not be less than 1!");}
     }
 
-    public String countEndDate(int startMonth, int startDay, int startYear, int daysToAdd) {
+    private String countEndDate(int startMonth, int startDay, int startYear, int daysToAdd) {
         int numberOfDaysTemp = daysPerMonth.get(startMonth);
 
         // For finding leap year.
@@ -66,12 +75,11 @@ public class DueDateHandler {
             }
         }
 
-        // Print the updated date.
         return (startMonth + "/" + updatedDay + "/" + startYear);
     }
 
-    // Implementation fo the Zeller’s congruence is an algorithm to calculate the day of the week for any Gregorian calendar date.
-    public int findSubmitDayOfWeek(int day, int month, int year)
+    // Implementation of the Zeller's congruence is an algorithm to calculate the day of the week for any Gregorian calendar date.
+    private int findSubmitDayOfWeek(int day, int month, int year)
     {
         if (month == 1)
         {
@@ -83,18 +91,15 @@ public class DueDateHandler {
             month = 14;
             year--;
         }
-        int q = day;
-        int m = month;
         int k = year % 100;
         int j = year / 100;
-        int h = q + 13*(m + 1) / 5 + k + k / 4 + j / 4 + 5 * j;
-        int dayOfTheWeek = h % 7;
-        //System.out.println("Zellers result is: "+h );
-        return dayOfTheWeek;
+        int h = day + 13*(month + 1) / 5 + k + k / 4 + j / 4 + 5 * j;
+
+        return h % 7;
     }
     public String calculateDueDate(){
         int extraDays = 0;
-        int extraHours = 0;
+        int extraHours;
 
         if (turnAroundHours > dayEndHour-submitHour){
             extraDays ++;
@@ -102,17 +107,18 @@ public class DueDateHandler {
             extraHours = (turnAroundHours-(dayEndHour-submitHour))%8;
         }
         else {
-            extraHours = turnAroundHours;
+            return ("Date: " + submitMonth + "/" + submitDay + "/" + submitYear)
+                    + " Hour: " + (submitHour + turnAroundHours);
         }
 
         int dayOfWeek = findSubmitDayOfWeek(submitDay,submitMonth, submitYear);
-        //System.out.println("Extradays to add: " + extraDays);
-        int daysToAdd = countExtraWeekDays(extraDays, dayOfWeek, extraHours);
+        int daysToAdd = countExtraWeekDays(extraDays, dayOfWeek);
 
-        return ("Date: "+ countEndDate(submitMonth, submitDay, submitYear, daysToAdd) +" Hour: " + (dayStartHour + extraHours));
+        return ("Date: " + countEndDate(submitMonth, submitDay, submitYear, daysToAdd)
+                + " Hour: " + (dayStartHour + extraHours));
     }
 
-    public List<String> generateWeekdays(int startIndex, int n) {
+    private List<String> generateWeekdays(int startIndex, int n) {
         List<String> weekdays = Arrays.asList("Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday");
 
         List<String> generatedWeekdays = new ArrayList<>();
@@ -127,7 +133,7 @@ public class DueDateHandler {
         return generatedWeekdays;
     }
 
-    public int countExtraWeekDays(int extraWorkingDays, int startDay, int extraHours){
+    private int countExtraWeekDays(int extraWorkingDays, int startDay){
         int countWeekDays = 0;
         int extraWeekDays = 0;
         List<String> generatedWeekdays = generateWeekdays(startDay,extraWorkingDays/7+2);
