@@ -133,7 +133,9 @@ public class DueDateHandler {
     private int countExtraWeekDays(int extraWorkingDays, int startDay) {
         int countWeekDays = 0;
         int extraWeekDays = 0;
-        List<String> generatedWeekdays = generateWeekdaysList(startDay, extraWorkingDays / 7 + 2);
+        int extraWeeks = extraWorkingDays/7;
+
+        List<String> generatedWeekdays = generateWeekdaysList(startDay,extraWeeks + 2 + extraWeeks/3);
 
         //Iterating the weekdays list and counts them until all the extra days occurs on working day.
         for (int i = 1; i < generatedWeekdays.size() - 1; i++) {
