@@ -6,10 +6,10 @@ import java.util.*;
 
 public class DueDateHandler {
 
-    private static final Logger logger = LogManager.getLogger();
+    static final Logger logger = LogManager.getLogger();
     static final int DAY_START_HOUR = 9;
     static final int DAY_END_HOUR = 17;
-    private static final Map<Integer, Integer> DAYS_PER_MONTH;
+    static final Map<Integer, Integer> DAYS_PER_MONTH;
 
     static {
         DAYS_PER_MONTH = new HashMap<Integer, Integer>();
@@ -45,7 +45,7 @@ public class DueDateHandler {
             throw new IllegalArgumentException("SubmitMonth parameter must be from 1-12!");
         }
 
-        if (submitDay > 1 && submitDay < 32) {
+        if (submitDay > 0 && submitDay < 32) {
             this.submitDay = submitDay;
         } else {
             throw new IllegalArgumentException("SubmitDay parameter must be from 1-31!");
@@ -84,6 +84,26 @@ public class DueDateHandler {
                 + " HOUR: " + (DAY_START_HOUR + extraHours));
     }
 
+    // Implementation of the Zeller's congruence algorithm to calculate the day of the week
+    // for any Gregorian calendar date. Returns 0 as Saturday - 6 Friday
+    public int findSubmitDayOfWeek(int day, int month, int year) {
+        if (month == 1) {
+            month = 13;
+            year--;
+        }
+        if (month == 2) {
+            month = 14;
+            year--;
+        }
+        int k = year % 100;
+        int j = year / 100;
+        int h = day + 13 * (month + 1) / 5 + k + k / 4 + j / 4 + 5 * j;
+
+        logger.info("SubmitDay index " + h % 7 + " counted by the Zeller's method");
+
+        return h % 7;
+    }
+
     private String countEndDate(int startMonth, int startDay, int startYear, int daysToAdd) {
         int numberOfDaysTemp = DAYS_PER_MONTH.get(startMonth);
 
@@ -108,26 +128,6 @@ public class DueDateHandler {
             }
         }
         return (startMonth + "/" + updatedDay + "/" + startYear);
-    }
-
-    // Implementation of the Zeller's congruence algorithm,
-    // to calculate the day of the week for any Gregorian calendar date.
-    private int findSubmitDayOfWeek(int day, int month, int year) {
-        if (month == 1) {
-            month = 13;
-            year--;
-        }
-        if (month == 2) {
-            month = 14;
-            year--;
-        }
-        int k = year % 100;
-        int j = year / 100;
-        int h = day + 13 * (month + 1) / 5 + k + k / 4 + j / 4 + 5 * j;
-
-        logger.info("SubmitDay index " + h % 7 + " counted by the Zeller's method");
-
-        return h % 7;
     }
 
     private int countExtraWeekDays(int extraWorkingDays, int startDay) {
